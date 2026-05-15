@@ -124,7 +124,11 @@ html[data-theme="light"] .cell.ghost {
     radial-gradient(120% 80% at 50% 0%, rgba(255, 255, 255, 0.06), transparent 70%),
     var(--card-strong);
   border: 1px solid var(--border);
+  /* Fixed-ish slot height keeps all 3 tray cells aligned even when one
+     piece is a tall 1xN bar. The swatch inside (capped to max-height:
+     100%) shrinks via per-piece --piece-cell-px from JS. */
   min-height: 92px;
+  max-height: 130px;
   transition: transform 0.18s ease, opacity 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
   touch-action: none;
   cursor: grab;
@@ -156,9 +160,17 @@ html[data-theme="light"] .cell.ghost {
 .piece.dragging { opacity: 0.22; }
 .piece.dead { filter: saturate(0.2); opacity: 0.38; }
 
-.piece-grid { display: grid; gap: 3px; }
+.piece-grid {
+  display: grid; gap: 3px;
+  /* Cap the swatch height so 1xN vertical bars never burst out of the
+     tray slot. The slot is overflow:hidden, but capping here also keeps
+     the row from inflating which would push neighbouring slots taller. */
+  max-height: 100%;
+}
 .piece-cell {
-  width: 18px; height: 18px; border-radius: 5px;
+  width: var(--piece-cell-px, 18px);
+  height: var(--piece-cell-px, 18px);
+  border-radius: 5px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(0, 0, 0, 0) 55%),
     var(--cell-color);

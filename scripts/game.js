@@ -210,10 +210,24 @@ function paintGhost(shape, br, bc, color, bad){
 }
 
 function pieceSwatch(piece){
+  /* Render a static preview of the piece in the tray slot.
+     Long shapes (e.g. 1xN bars) would overflow a fixed 18px cell size,
+     so we scale cells down based on the longest side of the shape.
+     This keeps every piece bounded inside its slot regardless of
+     orientation while still keeping small pieces readable. */
   const wrap = document.createElement("div");
   wrap.className = "piece-grid";
-  wrap.style.gridTemplateColumns = "repeat("+piece.shape[0].length+",1fr)";
-  for(let r=0;r<piece.shape.length;r++) for(let c=0;c<piece.shape[0].length;c++){
+  const W = piece.shape[0].length;
+  const H = piece.shape.length;
+  const longest = Math.max(W, H);
+  const cellPx =
+    longest <= 3 ? 18 :
+    longest <= 4 ? 15 :
+    longest <= 5 ? 13 :
+    /* 6+ */      11;
+  wrap.style.setProperty("--piece-cell-px", cellPx + "px");
+  wrap.style.gridTemplateColumns = "repeat("+W+",var(--piece-cell-px))";
+  for(let r=0;r<H;r++) for(let c=0;c<W;c++){
     const cell = document.createElement("div");
     cell.className = "piece-cell" + (piece.shape[r][c] ? "" : " gap");
     cell.style.setProperty("--cell-color", piece.color);

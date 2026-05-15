@@ -332,8 +332,19 @@
 }
 .row-stack > div:first-child { margin-bottom: 10px; }
 
-/* Dropdown menu should scroll once we ship 18+ languages. */
-.dropdown__menu { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+/* Dropdown menu should scroll once we ship 18+ languages. On touch
+   devices the portaled menu lives directly on <body>, so we also need
+   touch-action: pan-y and -webkit-overflow-scrolling: touch to let
+   finger-scrolling work without the parent steal-events. overscroll-
+   behavior contains the scroll so it doesn't chain to the page. */
+.dropdown__menu {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
 .dropdown__menu::-webkit-scrollbar { width: 6px; }
 .dropdown__menu::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; }
 .dropdown__menu::-webkit-scrollbar-track { background: transparent; }

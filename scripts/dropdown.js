@@ -220,7 +220,14 @@ function buildLangDropdown(rootEl, opts) {
   });
 
   // Re-position the open menu on viewport changes so it stays in bounds.
-  const reflow = () => { if (rootEl.classList.contains("open")) positionMenu(); };
+  // Skip the reflow when the scroll happens *inside* the menu itself —
+  // otherwise the position is recomputed on every wheel/touch frame and
+  // scrolling the language list jitters or stops outright on mobile.
+  const reflow = (ev) => {
+    if (!rootEl.classList.contains("open")) return;
+    if (ev && ev.target && menu.contains(ev.target)) return;
+    positionMenu();
+  };
   window.addEventListener("resize", reflow, { passive: true });
   window.addEventListener("scroll", reflow, { passive: true, capture: true });
 

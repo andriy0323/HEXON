@@ -1,0 +1,180 @@
+/* ============================================================
+   HEXON BETA — menu screen
+   The main hub shown after login. Designed to fit any
+   viewport without scrolling.
+   ============================================================ */
+
+.menu-screen { display: none; }
+.menu-screen.active { display: flex; }
+
+.menu-head { gap: 12px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+.brand .logo-mark {
+  width: 38px; height: 38px; border-radius: 11px;
+  box-shadow: 0 8px 20px rgba(124, 92, 255, 0.45);
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
+.brand-text .t1 { font-weight: 800; font-size: 15px; white-space: nowrap; letter-spacing: 0.01em; }
+.brand-text .t2 { font-size: 10px; color: var(--fg-dim); letter-spacing: 0.22em; text-transform: uppercase; margin-top: 3px; }
+
+.user-pill {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 999px;
+  background: var(--card-strong);
+  border: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+.user-pill .avatar.sm {
+  width: 36px; height: 36px; border-radius: 50%;
+  font-size: 16px;
+  box-shadow: 0 6px 14px rgba(124, 92, 255, 0.40);
+}
+.user-pill .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.user-pill .nm { font-weight: 800; font-size: 14px; line-height: 1.1; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-pill .meta { font-size: 11px; color: var(--fg-dim); }
+.user-pill .meta b { color: var(--fg); }
+
+/* ---------- Menu body ---------- */
+.menu-body {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 22px;
+  padding: 28px 24px;
+}
+
+/* Big "Play" card */
+.play-card {
+  position: relative;
+  width: min(560px, 100%);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 26px;
+  border-radius: 22px;
+  text-align: left;
+  background: var(--accent-grad);
+  border: 0;
+  color: #fff;
+  box-shadow:
+    0 18px 50px rgba(124, 92, 255, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.25s ease, filter 0.2s ease;
+  overflow: hidden;
+}
+.play-card::after {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(400px 200px at 0% 0%, rgba(255, 255, 255, 0.20), transparent 70%),
+    radial-gradient(400px 200px at 100% 100%, rgba(255, 255, 255, 0.12), transparent 70%);
+  pointer-events: none;
+}
+.play-card:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow:
+    0 22px 60px rgba(124, 92, 255, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.play-card:active { transform: translateY(0); }
+
+.play-card-icon {
+  width: 64px; height: 64px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.20);
+  display: grid; place-items: center;
+  color: #fff;
+  flex: 0 0 auto;
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+.play-card-icon .ic-svg { width: 30px; height: 30px; }
+
+.play-card-text { min-width: 0; position: relative; }
+.play-card-text .big {
+  font-weight: 800; font-size: 28px;
+  letter-spacing: 0.02em; line-height: 1.05;
+}
+.play-card-text .sub {
+  font-size: 13px; color: rgba(255, 255, 255, 0.86);
+  margin-top: 4px;
+}
+
+.play-card-stats {
+  display: flex; flex-direction: column; gap: 6px;
+  text-align: right;
+  position: relative;
+  flex: 0 0 auto;
+}
+.play-card-stats > div {
+  font-size: 12px; color: rgba(255, 255, 255, 0.85);
+  display: flex; align-items: baseline; gap: 6px;
+  justify-content: flex-end;
+}
+.play-card-stats b {
+  font-size: 16px; color: #fff;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Secondary tiles ---------- */
+.menu-grid {
+  width: min(720px, 100%);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.menu-tile {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px;
+  padding: 16px 14px;
+  border-radius: 16px;
+  font-weight: 700; font-size: 14px;
+  color: var(--fg);
+  background: var(--card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.menu-tile svg { color: var(--accent); flex: 0 0 auto; }
+.menu-tile:hover {
+  background: var(--card-strong);
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.20);
+}
+.menu-tile:active { transform: translateY(0); }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 720px) {
+  .menu-body { gap: 16px; padding: 18px 14px; }
+  .play-card {
+    grid-template-columns: auto 1fr;
+    gap: 14px; padding: 18px 18px;
+  }
+  .play-card-stats {
+    grid-column: 1 / -1;
+    flex-direction: row; gap: 14px;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  .play-card-stats > div { justify-content: flex-start; }
+  .play-card-text .big { font-size: 24px; }
+  .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .user-pill .nm { max-width: 110px; }
+  .user-pill .meta { display: none; }
+}
+@media (max-width: 380px) {
+  .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .play-card-icon { width: 52px; height: 52px; border-radius: 14px; }
+  .play-card-icon .ic-svg { width: 24px; height: 24px; }
+  .play-card-text .big { font-size: 22px; }
+}

@@ -37,6 +37,24 @@ OUT="$HERE/build"
 rm -rf "$OUT"
 mkdir -p "$OUT/compiled-res" "$OUT/classes" "$OUT/dex" "$OUT/gen"
 
+# ------------------------------------------------------- 0. sync web assets
+# The WebView wrapper loads file:///android_asset/web/index.html. Mirror the
+# repo-root web bundle into android/assets/web/ on every build so the APK
+# always reflects the latest scripts/styles/index.html.
+REPO_ROOT="$(cd "$HERE/.." && pwd)"
+WEB_DST="$HERE/assets/web"
+rm -rf "$WEB_DST"
+mkdir -p "$WEB_DST"
+cp    "$REPO_ROOT/index.html" "$WEB_DST/"
+cp -r "$REPO_ROOT/scripts"    "$WEB_DST/"
+cp -r "$REPO_ROOT/styles"     "$WEB_DST/"
+# Anything else the page needs at runtime (images, fonts, manifest) gets
+# mirrored too if present at the repo root.
+for extra in icons fonts assets img images manifest.json favicon.ico; do
+    if [[ -e "$REPO_ROOT/$extra" ]]; then cp -r "$REPO_ROOT/$extra" "$WEB_DST/"; fi
+done
+echo "synced web assets ->" "$WEB_DST"
+
 # ---------------------------------------------------------------- 1. resources
 # Compile every resource file independently.
 RES_FILES=$(find res -type f \( -name '*.xml' -o -name '*.png' -o -name '*.jpg' -o -name '*.webp' \))

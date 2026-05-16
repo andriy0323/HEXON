@@ -227,3 +227,38 @@
 @media (max-width: 380px) {
   .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ---------- Admin panel (nickname "admin") ---------- */
+.shop-admin-wrap { margin: 22px 0 8px; }
+.shop-admin-wrap.hidden { display: none; }
+.admin-card {
+  border-radius: 18px;
+  padding: 14px 16px 16px;
+  background: linear-gradient(180deg, rgba(255,180,84,.10), rgba(255,84,128,.10));
+  border: 1px solid rgba(255,150,84,.35);
+  box-shadow: 0 12px 28px -18px rgba(255,120,80,.55);
+}
+.admin-card-head {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px;
+}
+.admin-card-head svg { color: #ffba6b; }
+.admin-card-head b { color: #ffba6b; letter-spacing: .12em; font-size: 12px; }
+.admin-id {
+  margin-left: auto;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,180,84,.12);
+  color: #ffd9b0;
+  border: 1px solid rgba(255,180,84,.30);
+}
+.admin-actions {
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+.admin-actions .btn-primary,
+.admin-actions .btn-ghost {
+  flex: 1 1 auto;
+  min-width: 140px;
+}

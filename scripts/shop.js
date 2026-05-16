@@ -52,7 +52,57 @@ function renderShop(){
   paintShopTabs();
   if(shopTab === "skins") paintSkinGrid();
   else                    paintCoinGrid();
+  paintAdminPanel();
   renderWallet();
+}
+
+/* ---------------- Admin panel ----------------
+   The "admin" mode is triggered by logging in with the literal
+   nickname "admin" (case-insensitive). When active, an admin card
+   appears at the bottom of the shop with three useful actions:
+     - grant 100 000 HEX to the current device,
+     - unlock every skin in the catalogue,
+     - copy this device's HEXON ID to the clipboard.
+   The badge is hidden for non-admin players so they never see it. */
+function isAdminUser(){
+  const n = (state && state.profile && state.profile.nickname || "").trim().toLowerCase();
+  return n === "admin";
+}
+function paintAdminPanel(){
+  const wrap = document.getElementById("shop-admin");
+  if(!wrap) return;
+  if(!isAdminUser()){ wrap.classList.add("hidden"); wrap.innerHTML = ""; return; }
+  wrap.classList.remove("hidden");
+  wrap.innerHTML =
+    '<div class="admin-card">' +
+      '<div class="admin-card-head">'+
+        '<svg viewBox="0 0 20 20" width="18" height="18"><use href="#i-shop"/></svg>'+
+        '<b>ADMIN</b>'+
+        '<span class="admin-id" id="admin-id-chip">'+(state.profile.id||'')+'</span>'+
+      '</div>'+
+      '<div class="admin-actions">'+
+        '<button class="btn-primary" id="admin-grant-100k">+100 000 HEX</button>'+
+        '<button class="btn-primary" id="admin-unlock-all">Unlock all skins</button>'+
+        '<button class="btn-ghost"   id="admin-copy-id">Copy ID</button>'+
+      '</div>'+
+    '</div>';
+  const g = document.getElementById("admin-grant-100k");
+  if(g) g.addEventListener("click", () => {
+    addCoins(100000);
+    toast("ADMIN: +100 000 HEX", "success");
+  });
+  const u = document.getElementById("admin-unlock-all");
+  if(u) u.addEventListener("click", () => {
+    SHOP_SKIN_ORDER.forEach(id => unlockSkin(id));
+    saveState();
+    renderShop();
+    toast("ADMIN: всі скини відкрито", "success");
+  });
+  const c = document.getElementById("admin-copy-id");
+  if(c) c.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(state.profile.id || ""); toast("ID скопійовано", "success"); }
+    catch { toast(state.profile.id || "", "info"); }
+  });
 }
 
 function paintShopTabs(){

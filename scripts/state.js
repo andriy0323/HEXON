@@ -1,6 +1,11 @@
 /* ---------- State ---------- */
 const state = {
-  profile: { nickname:"", id:"", registeredAt:0, lastLoginDay:0, loginDays:[] },
+  /* `passwordHash` is the sha-256 hex of the plaintext password the
+     player chose at registration. We never store the plaintext. */
+  profile: { nickname:"", id:"", passwordHash:"", registeredAt:0, lastLoginDay:0, loginDays:[] },
+  /* Activation-code nonces already redeemed on this device, so the
+     same admin-generated code can't be used twice. */
+  usedActivationCodes: [],
   stats: { games:0, best:0, bestRun:0, totalScore:0, totalTimeMs:0, lines:0, bestCombo:0, placedTotal:0, xp:0 },
   settings: {
     lang: "uk",

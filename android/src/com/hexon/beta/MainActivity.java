@@ -1,11 +1,15 @@
 package com.hexon.beta;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -16,6 +20,17 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * HEXON BETA — minimal WebView wrapper for the bundled HTML5 game.
@@ -28,6 +43,9 @@ import android.webkit.WebViewClient;
 public class MainActivity extends Activity {
 
     private static final String START_URL = "file:///android_asset/web/index.html";
+    private static final int REQ_LEGACY_STORAGE = 4711;
+    /** Folder inside public Documents that survives uninstall. */
+    private static final String PROFILES_SUBDIR = "HEXON";
 
     private WebView webView;
 
@@ -75,6 +93,134 @@ public class MainActivity extends Activity {
                     }
                 }
             });
+        }
+
+        // -------------------------------------------------------- storage
+        /** True iff we can read/write the public Documents/HEXON/ folder. */
+        @JavascriptInterface
+        public boolean hasStoragePermission() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                try { return Environment.isExternalStorageManager(); }
+                catch (Throwable ignored) { return false; }
+            }
+            // Runtime permissions only matter from API 23 onwards.
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true;
+            return checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED;
+        }
+
+        /**
+         * Opens the correct system UI for the player to grant file access.
+         * On Android 11+ it's the "All files access" page; on older it's
+         * the runtime permission dialog handled by requestPermissions.
+         */
+        @JavascriptInterface
+        public void requestStoragePermission() {
+            runOnUiThread(new Runnable() {
+                @Override public void run() {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        try {
+                            Intent i = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                            i.setData(Uri.parse("package:" + getPackageName()));
+                            startActivity(i);
+                        } catch (Throwable t1) {
+                            try {
+                                startActivity(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
+                            } catch (Throwable ignored) { /* no-op */ }
+                        }
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        requestPermissions(new String[]{
+                                Manifest.permission.READ_EXTERNAL_STORAGE,
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        }, REQ_LEGACY_STORAGE);
+                    }
+                }
+            });
+        }
+
+        /** Writes JSON to Documents/HEXON/{name}.json. Overwrites. */
+        @JavascriptInterface
+        public boolean saveProfile(String name, String json) {
+            try {
+                File f = profileFile(name);
+                if (f == null) return false;
+                f.getParentFile().mkdirs();
+                FileOutputStream out = new FileOutputStream(f, false);
+                OutputStreamWriter w = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+                w.write(json == null ? "" : json);
+                w.flush(); w.close(); out.close();
+                return true;
+            } catch (Throwable t) {
+                android.util.Log.w("HEXON", "saveProfile failed: " + t.getMessage());
+                return false;
+            }
+        }
+
+        /** Reads back Documents/HEXON/{name}.json, or empty string if absent. */
+        @JavascriptInterface
+        public String loadProfile(String name) {
+            try {
+                File f = profileFile(name);
+                if (f == null || !f.isFile()) return "";
+                FileInputStream in = new FileInputStream(f);
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                byte[] buf = new byte[4096];
+                int n;
+                while ((n = in.read(buf)) > 0) bos.write(buf, 0, n);
+                in.close();
+                return new String(bos.toByteArray(), StandardCharsets.UTF_8);
+            } catch (Throwable t) {
+                android.util.Log.w("HEXON", "loadProfile failed: " + t.getMessage());
+                return "";
+            }
+        }
+
+        /** Returns a JSON-array string of saved profile nicknames. */
+        @JavascriptInterface
+        public String listProfiles() {
+            JSONArray arr = new JSONArray();
+            try {
+                File dir = profilesDir();
+                if (dir == null || !dir.isDirectory()) return "[]";
+                File[] files = dir.listFiles();
+                if (files == null) return "[]";
+                Arrays.sort(files);
+                for (File f : files) {
+                    String fn = f.getName();
+                    if (fn.toLowerCase().endsWith(".json")) {
+                        arr.put(fn.substring(0, fn.length() - 5));
+                    }
+                }
+            } catch (Throwable t) { /* fall through with what we have */ }
+            return arr.toString();
+        }
+
+        /** True if the named profile already exists on disk. */
+        @JavascriptInterface
+        public boolean profileExists(String name) {
+            File f = profileFile(name);
+            return f != null && f.isFile();
+        }
+
+        // ----- internal helpers (NOT exposed to JS) -----
+        private File profilesDir() {
+            File docs = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DOCUMENTS);
+            return new File(docs, PROFILES_SUBDIR);
+        }
+        private File profileFile(String name) {
+            String safe = safeName(name);
+            if (safe.isEmpty()) return null;
+            return new File(profilesDir(), safe + ".json");
+        }
+        private String safeName(String name) {
+            if (name == null) return "";
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < name.length() && b.length() < 40; i++) {
+                char c = name.charAt(i);
+                if (Character.isLetterOrDigit(c) || c == '_' || c == '-') b.append(c);
+            }
+            return b.toString().toLowerCase();
         }
     }
 

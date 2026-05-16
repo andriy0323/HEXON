@@ -71,7 +71,13 @@ function isAdminUser(){
 function paintAdminPanel(){
   const wrap = document.getElementById("shop-admin");
   if(!wrap) return;
-  if(!isAdminUser()){ wrap.classList.add("hidden"); wrap.innerHTML = ""; return; }
+  if(!isAdminUser()){
+    // Non-admin players still get the activation-code redeem card.
+    wrap.classList.remove("hidden");
+    wrap.innerHTML = renderActivationRedeemCard();
+    wireActivationRedeemCard();
+    return;
+  }
   wrap.classList.remove("hidden");
   wrap.innerHTML =
     '<div class="admin-card">' +
@@ -85,7 +91,26 @@ function paintAdminPanel(){
         '<button class="btn-primary" id="admin-unlock-all">Unlock all skins</button>'+
         '<button class="btn-ghost"   id="admin-copy-id">Copy ID</button>'+
       '</div>'+
-    '</div>';
+      /* Activation-code generator. The admin pastes the target player's
+         HEXON ID, picks an amount, hits "Generate" and copies the
+         resulting code to send back to that player. The code is bound
+         to the target ID and can only be redeemed once. */
+      '<div class="admin-gen">'+
+        '<div class="admin-gen-head"><b>Activation code generator</b></div>'+
+        '<div class="admin-gen-row">'+
+          '<input type="text" id="admin-gen-id"     placeholder="HX-XXXXX-XXXXX" autocomplete="off" spellcheck="false">'+
+          '<input type="number" id="admin-gen-amt"  placeholder="HEX amount" min="1" max="10000000" value="10000">'+
+        '</div>'+
+        '<div class="admin-gen-row">'+
+          '<button class="btn-primary" id="admin-gen-btn">Generate code</button>'+
+          '<button class="btn-ghost"   id="admin-gen-copy" disabled>Copy</button>'+
+        '</div>'+
+        '<div class="admin-gen-out mono" id="admin-gen-out">—</div>'+
+      '</div>'+
+    '</div>'+
+    /* The admin also gets the redeem card so they can self-test codes. */
+    renderActivationRedeemCard();
+
   const g = document.getElementById("admin-grant-100k");
   if(g) g.addEventListener("click", () => {
     addCoins(100000);
@@ -102,6 +127,81 @@ function paintAdminPanel(){
   if(c) c.addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(state.profile.id || ""); toast("ID скопійовано", "success"); }
     catch { toast(state.profile.id || "", "info"); }
+  });
+
+  const genBtn  = document.getElementById("admin-gen-btn");
+  const genOut  = document.getElementById("admin-gen-out");
+  const genCopy = document.getElementById("admin-gen-copy");
+  if(genBtn) genBtn.addEventListener("click", async () => {
+    const id  = document.getElementById("admin-gen-id").value.trim();
+    const amt = parseInt(document.getElementById("admin-gen-amt").value, 10) || 0;
+    if(!id || amt <= 0){
+      genOut.textContent = "—";
+      genCopy.disabled = true;
+      toast("ID + amount required", "error");
+      return;
+    }
+    try {
+      const code = await makeActivationCode(id, amt);
+      genOut.textContent = code;
+      genCopy.disabled = false;
+      genCopy.dataset.code = code;
+      toast("Code generated", "success");
+    } catch (e) {
+      genOut.textContent = "—";
+      toast("Failed: " + e.message, "error");
+    }
+  });
+  if(genCopy) genCopy.addEventListener("click", async () => {
+    const code = genCopy.dataset.code || genOut.textContent || "";
+    if(!code || code === "—") return;
+    try { await navigator.clipboard.writeText(code); toast("Copied", "success"); }
+    catch { toast(code, "info"); }
+  });
+
+  wireActivationRedeemCard();
+}
+
+/* ---------- Activation-code redeem card (shown to every player) ---------- */
+function renderActivationRedeemCard(){
+  return ''+
+    '<div class="redeem-card">'+
+      '<div class="redeem-head">'+
+        '<svg viewBox="0 0 20 20" width="18" height="18"><use href="#i-shop"/></svg>'+
+        '<b data-i18n="redeem.title">Активувати код</b>'+
+      '</div>'+
+      '<p class="redeem-desc" data-i18n="redeem.desc">Вставте код, отриманий від адміна, щоб зарахувати HEX.</p>'+
+      '<div class="redeem-row">'+
+        '<input type="text" id="redeem-code-input" placeholder="HX1-XXXXXXXXXXXX-AMOUNT-NONCE-SIG" autocomplete="off" spellcheck="false">'+
+        '<button class="btn-primary" id="redeem-code-btn" data-i18n="redeem.apply">Активувати</button>'+
+      '</div>'+
+    '</div>';
+}
+function wireActivationRedeemCard(){
+  const btn = document.getElementById("redeem-code-btn");
+  const inp = document.getElementById("redeem-code-input");
+  if(!btn || !inp) return;
+  btn.addEventListener("click", async () => {
+    const code = (inp.value || "").trim();
+    if(!code) return;
+    const r = await verifyActivationCode(code, state.profile.id || "");
+    if(!r.ok){
+      const reasonMsg = {
+        "format":   t("redeem.err.format")   || "Неправильний формат коду",
+        "wrong-id": t("redeem.err.wrong-id") || "Код не для вашого ID",
+        "amount":   t("redeem.err.amount")   || "Невірна сума",
+        "bad-sig":  t("redeem.err.bad-sig")  || "Код підроблений або змінений",
+        "used":     t("redeem.err.used")     || "Код вже використано"
+      }[r.reason] || (t("redeem.err.generic") || "Помилка");
+      toast(reasonMsg, "error");
+      try { sfx.error && sfx.error(); } catch {}
+      return;
+    }
+    addCoins(r.amount);
+    saveState();
+    toast((t("redeem.ok") || "+{n} HEX зараховано").replace("{n}", r.amount), "success");
+    inp.value = "";
+    try { sfx.coinUp && sfx.coinUp(); } catch {}
   });
 }
 

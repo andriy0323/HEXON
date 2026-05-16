@@ -262,3 +262,62 @@
   flex: 1 1 auto;
   min-width: 140px;
 }
+
+/* ---------- Activation-code generator + redeem ---------- */
+.admin-gen {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(255,180,84,.30);
+}
+.admin-gen-head b { color: #ffba6b; letter-spacing: .04em; font-size: 13px; }
+.admin-gen-row {
+  display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;
+}
+.admin-gen-row input,
+.redeem-row input {
+  flex: 1 1 160px;
+  min-width: 120px;
+  background: rgba(0,0,0,.30);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #fff;
+  font: 600 13px/1.2 ui-monospace, "JetBrains Mono", monospace;
+}
+.admin-gen-row input:focus,
+.redeem-row input:focus {
+  border-color: rgba(124, 92, 255, 0.55);
+  outline: none;
+}
+.admin-gen-row .btn-primary,
+.admin-gen-row .btn-ghost { flex: 0 0 auto; min-width: 100px; }
+.admin-gen-out {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: rgba(0,0,0,.35);
+  border-radius: 10px;
+  font-size: 12px;
+  word-break: break-all;
+  color: #d6c89c;
+  min-height: 36px;
+}
+
+.redeem-card {
+  margin-top: 14px;
+  padding: 14px 16px 16px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(124, 92, 255, .10), rgba(64, 184, 255, .10));
+  border: 1px solid rgba(124, 92, 255, .35);
+}
+.redeem-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.redeem-head b { color: #bdb3ff; letter-spacing: .04em; font-size: 13px; }
+.redeem-head svg { color: #bdb3ff; }
+.redeem-desc {
+  margin: 0 0 12px; font-size: 12px; color: var(--fg-mute);
+}
+.redeem-row {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.redeem-row .btn-primary { flex: 0 0 auto; min-width: 120px; }

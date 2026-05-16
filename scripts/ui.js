@@ -107,36 +107,144 @@ function init() {
 
   // bind login
   const nickInput = $("#nickname-input");
+  const pwdInput  = $("#password-input");
   const nickCount = $("#nick-count");
+  const errBox    = $("#login-error");
+  const permBox   = $("#login-perm");
+  const pwToggle  = $("#password-toggle");
+
   if (state.profile.nickname) {
     nickInput.value = state.profile.nickname;
     nickCount.textContent = state.profile.nickname.length + "/20";
   }
   nickInput.addEventListener("input", () => {
     nickCount.textContent = nickInput.value.length + "/20";
+    hideLoginError();
   });
-  $("#login-confirm").addEventListener("click", () => {
-    const name = (nickInput.value || "").trim() || "Player";
-    state.profile.nickname = name.slice(0, 20);
-    /* IDs are issued exactly once per install — see init() for the
-       permanent-key mirror that also survives reset. */
-    if (!state.profile.id) state.profile.id = genId();
-    if (typeof savePermanentPlayerId === "function") savePermanentPlayerId(state.profile.id);
-    if (!state.profile.registeredAt) state.profile.registeredAt = Date.now();
-    registerLoginDay();
-    saveState();
-    enterApp();
-    toast(t("toast.welcome", { name: state.profile.nickname }), "success");
+  pwdInput.addEventListener("input", () => hideLoginError());
+  pwToggle.addEventListener("click", () => {
+    pwdInput.type = pwdInput.type === "password" ? "text" : "password";
+    pwToggle.textContent = pwdInput.type === "password"
+      ? t("login.show") || "show"
+      : t("login.hide") || "hide";
   });
-  nickInput.addEventListener("keydown", e => { if (e.key === "Enter") $("#login-confirm").click(); });
 
-  // auto-resume if already registered
-  if (state.profile.nickname && state.profile.id) {
+  // Permission UX: only show the file-access banner if we're inside the
+  // Android WebView and the user hasn't granted it yet. Browser players
+  // never see it.
+  refreshLoginPermBanner();
+  const permBtn = $("#login-perm-grant");
+  if (permBtn) permBtn.addEventListener("click", () => {
+    if (typeof HexBridge !== "undefined") {
+      HexBridge.requestPermission();
+      // Re-check on focus — when the user returns from settings the page
+      // gets focus again.
+      setTimeout(refreshLoginPermBanner, 250);
+    }
+  });
+  window.addEventListener("focus", refreshLoginPermBanner);
+
+  $("#login-confirm").addEventListener("click", handleLoginConfirm);
+  nickInput.addEventListener("keydown", e => { if (e.key === "Enter") pwdInput.focus(); });
+  pwdInput.addEventListener("keydown", e => { if (e.key === "Enter") handleLoginConfirm(); });
+
+  // auto-resume if already registered AND we have a password hash (legacy
+  // saves without one fall through to the login screen so the player can
+  // set a password the first time they open the new build).
+  if (state.profile.nickname && state.profile.id && state.profile.passwordHash) {
     registerLoginDay();
     enterApp();
   } else {
     showLogin();
   }
+}
+
+function showLoginError(msg){
+  const box = document.getElementById("login-error");
+  if(!box) return;
+  box.textContent = msg;
+  box.hidden = false;
+}
+function hideLoginError(){
+  const box = document.getElementById("login-error");
+  if(box) box.hidden = true;
+}
+function refreshLoginPermBanner(){
+  const banner = document.getElementById("login-perm");
+  if(!banner) return;
+  const onAndroid = typeof HexBridge !== "undefined" && HexBridge.available && HexBridge.available();
+  const hasPerm   = onAndroid && HexBridge.hasPermission && HexBridge.hasPermission();
+  banner.hidden = !onAndroid || hasPerm;
+}
+
+/* Login / register flow ----------------------------------------------
+   - If a profile file already exists for `nickname` on disk, we *must*
+     match its password hash. On success we replace the in-memory state
+     with the loaded blob and continue.
+   - Otherwise we treat the form as a new registration: the nickname
+     becomes ours, the new password hash is stored, and `state` is
+     written back to disk on the next saveState().
+   - Empty nicknames or empty passwords are rejected — both are required. */
+async function handleLoginConfirm(){
+  const nickInput = document.getElementById("nickname-input");
+  const pwdInput  = document.getElementById("password-input");
+  const name = (nickInput.value || "").trim();
+  const pwd  = (pwdInput.value  || "").trim();
+  if(!name){ showLoginError(t("login.err.no-name") || "Введіть нік"); return; }
+  if(pwd.length < 4){ showLoginError(t("login.err.weak-pass") || "Пароль мін. 4 символи"); return; }
+
+  const safeName = (typeof safeProfileName === "function") ? safeProfileName(name) : name.toLowerCase();
+  const pwHash   = await sha256Hex(pwd);
+
+  /* Try loading a saved profile for this nickname first. On Android the
+     disk bridge is consulted; in the browser this falls back to the
+     per-nickname localStorage cache built by saveProfileToDisk. */
+  let loaded = (typeof loadProfileFromDisk === "function")
+    ? loadProfileFromDisk(name) : null;
+  if (loaded && loaded.passwordHash && loaded.passwordHash !== pwHash){
+    showLoginError(t("login.err.bad-pass") || "Невірний пароль");
+    return;
+  }
+  if (loaded && loaded.state){
+    /* Restore everything from disk and continue. The disk blob's state
+       carries its own profile.id so we don't generate a new one. */
+    applyLoadedSnapshot(loaded.state);
+    state.profile.nickname = name.slice(0, 20);
+    state.profile.passwordHash = pwHash;
+    if (!state.profile.id) state.profile.id = genId();
+  } else {
+    /* Fresh registration on this device. We deliberately mint a NEW
+       HEXON ID rather than reusing whatever was left over in state,
+       so different accounts always have different IDs. The
+       per-nickname profile cache is the new "permanent" anchor. */
+    state.profile.nickname = name.slice(0, 20);
+    state.profile.passwordHash = pwHash;
+    state.profile.id = genId();
+    state.profile.registeredAt = Date.now();
+    state.profile.lastLoginDay = 0;
+    state.profile.loginDays = [];
+    /* Also reset wallet / skins / stats so the fresh account doesn't
+       inherit the previously-active account's progress. */
+    if (state.wallet) { state.wallet.coins = 0; state.wallet.lastDailyClaim = 0; }
+    if (state.skins)  { state.skins.equipped = "default"; state.skins.unlocked = ["default"]; }
+    if (state.achievements) state.achievements = new Set();
+    state.usedActivationCodes = [];
+  }
+  if (typeof savePermanentPlayerId === "function") savePermanentPlayerId(state.profile.id);
+  registerLoginDay();
+  saveState();
+  enterApp();
+  toast(t("toast.welcome", { name: state.profile.nickname }), "success");
+}
+
+/* Copy fields from a saved snapshot into the live state. We don't just
+   replace `state` because other modules hold a direct reference to it. */
+function applyLoadedSnapshot(snap){
+  if(!snap || typeof snap !== "object") return;
+  const k = ["profile","stats","settings","hidden","dailyTasks","leaderboards","wallet","skins","usedActivationCodes"];
+  k.forEach(key => { if(snap[key] !== undefined) state[key] = snap[key]; });
+  state.achievements = new Set(Array.isArray(snap.achievements) ? snap.achievements : []);
+  state.run = null;
 }
 
 function setupLoginDevicePicker() {
@@ -343,10 +451,13 @@ function bindAppEvents() {
   $("#exit-stay").addEventListener("click", () => { closeModal("#modal-exit"); });
   $("#exit-pause").addEventListener("click", () => { closeModal("#modal-exit"); go("menu"); });
   $("#exit-signout").addEventListener("click", () => {
-    /* "Sign out" clears the nickname so the login screen shows again,
-       but the permanent HEXON ID is preserved (mirror key) so the
-       player keeps their identity. */
+    /* "Sign out" clears the nickname and password hash so the login
+       screen shows again. We don't touch the file on disk — re-typing
+       the same nick + password restores the saved profile. The
+       permanent HEXON ID stays preserved in its mirror key for the
+       next fresh registration. */
     state.profile.nickname = "";
+    state.profile.passwordHash = "";
     saveState();
     if (typeof savePermanentPlayerId === "function" && state.profile.id) savePermanentPlayerId(state.profile.id);
     location.reload();

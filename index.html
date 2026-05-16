@@ -176,11 +176,21 @@
         <input id="nickname-input" type="text" maxlength="20" placeholder="Player" autocomplete="off" spellcheck="false">
         <span class="hint mono" id="nick-count">0/20</span>
       </div>
+      <div class="input-row">
+        <svg class="ic-svg lg" style="color:var(--fg-dim)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <input id="password-input" type="password" maxlength="32" placeholder="••••••" autocomplete="off" spellcheck="false">
+        <button id="password-toggle" class="hint mono" type="button" data-i18n="login.show" aria-label="toggle password" style="background:transparent;border:none;cursor:pointer;padding:4px 8px;">show</button>
+      </div>
+      <div id="login-error" class="login-error" hidden></div>
       <div class="login-actions">
         <button class="btn btn-primary btn-block" id="login-confirm">
           <svg class="ic-svg lg"><use href="#i-check"/></svg>
           <span data-i18n="login.confirm">Confirm</span>
         </button>
+      </div>
+      <div id="login-perm" class="login-perm" hidden>
+        <p data-i18n="login.perm.desc">To keep your progress across reinstalls, the game saves your profile to Documents/HEXON. Please grant file access.</p>
+        <button class="btn btn-ghost btn-block" id="login-perm-grant" data-i18n="login.perm.grant">Grant file access</button>
       </div>
       <div class="login-footer">
         <span>
@@ -692,6 +702,7 @@
 <script src="scripts/i18n.js"></script>
 <script src="scripts/storage.js"></script>
 <script src="scripts/state.js"></script>
+<script src="scripts/profile.js"></script>
 <script src="scripts/util.js"></script>
 <script src="scripts/effects.js"></script>
 <script src="scripts/skins.js"></script>

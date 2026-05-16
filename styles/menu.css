@@ -152,9 +152,89 @@
 }
 .menu-tile:active { transform: translateY(0); }
 
+/* ---------- HEX coin pill + daily reward pill (menu header) ---------- */
+.menu-pills {
+  display: flex; align-items: center; gap: 10px;
+  flex: 0 0 auto;
+}
+.hex-coin-pill, .daily-reward-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 14px 7px 9px;
+  border-radius: 999px;
+  background: var(--card-strong);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+  position: relative;
+  transition: transform .15s ease, box-shadow .25s ease, border-color .2s ease, background .25s ease;
+}
+.hex-coin-pill { padding-right: 12px; }
+.hex-coin-pill:hover, .daily-reward-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(124, 92, 255, .22);
+}
+.hex-coin-pill .coin-pill-icon { width: 22px; height: 22px; flex: 0 0 22px; }
+.hex-coin-pill .coin-pill-amount { font-weight: 800; letter-spacing: .01em; }
+.hex-coin-pill .coin-pill-unit, .daily-reward-pill .daily-label {
+  font-size: 10px; color: var(--fg-dim); letter-spacing: .12em; text-transform: uppercase;
+}
+.hex-coin-pill .coin-pill-unit { margin-left: -2px; }
+
+.daily-reward-pill .daily-cta {
+  font-weight: 800; padding: 2px 8px; border-radius: 999px;
+  background: rgba(124, 92, 255, .15);
+}
+.daily-reward-pill.daily-ready {
+  border-color: rgba(61, 220, 151, .55);
+  background: linear-gradient(135deg, rgba(61, 220, 151, .14), rgba(124, 92, 255, .12));
+  animation: dailyPulse 1.8s ease-in-out infinite;
+}
+.daily-reward-pill.daily-ready .daily-cta {
+  background: rgba(61, 220, 151, .25); color: #b8ffd6;
+}
+@keyframes dailyPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(61,220,151,.0); }
+  50%      { box-shadow: 0 0 0 8px rgba(61,220,151,.18); }
+}
+.daily-reward-pill.daily-locked { opacity: .85; }
+.daily-reward-pill.daily-locked .daily-cta {
+  color: var(--fg-dim); background: rgba(255, 255, 255, .04);
+}
+
+/* "+N HEX" / "-N HEX" pop above the coin pill on every wallet change. */
+.coin-delta {
+  position: absolute;
+  left: 50%; top: -2px;
+  transform: translate(-50%, 0);
+  font-weight: 800; font-size: 12px;
+  pointer-events: none;
+  letter-spacing: .02em;
+  animation: coinDeltaPop 1.35s ease-out forwards;
+  white-space: nowrap;
+}
+.coin-delta-up   { color: #b8ffd6; text-shadow: 0 0 8px rgba(61,220,151,.5); }
+.coin-delta-down { color: #ffb4c1; text-shadow: 0 0 8px rgba(255,100,112,.5); }
+@keyframes coinDeltaPop {
+  0%   { opacity: 0; transform: translate(-50%, 6px); }
+  25%  { opacity: 1; transform: translate(-50%, -12px); }
+  100% { opacity: 0; transform: translate(-50%, -36px); }
+}
+
+.menu-id { color: var(--fg-dim); font-size: 10px; opacity: .8; letter-spacing: .04em; }
+
+/* Distinct accents for special menu tiles. */
+.menu-tile.menu-tile-shop {
+  background: linear-gradient(135deg, rgba(255,180,84,.16), rgba(124,92,255,.10));
+  border-color: rgba(255,180,84,.35);
+}
+.menu-tile.menu-tile-shop:hover { border-color: rgba(255,180,84,.65); }
+
 /* ---------- Mobile ---------- */
 @media (max-width: 720px) {
   .menu-body { gap: 16px; padding: 18px 14px; }
+  .menu-head { flex-wrap: wrap; row-gap: 10px; }
+  .menu-pills { order: 3; width: 100%; justify-content: center; }
   .play-card {
     grid-template-columns: auto 1fr;
     gap: 14px; padding: 18px 18px;
@@ -170,7 +250,14 @@
   .play-card-text .big { font-size: 24px; }
   .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .user-pill .nm { max-width: 110px; }
-  .user-pill .meta { display: none; }
+  /* On mobile keep the level/best line but tighten it. */
+  .user-pill .meta { font-size: 10px; }
+  .menu-id { display: inline-block; margin-top: 1px; }
+}
+@media (max-width: 380px) {
+  .menu-pills { gap: 6px; }
+  .hex-coin-pill, .daily-reward-pill { padding: 6px 10px 6px 7px; font-size: 12px; }
+  .hex-coin-pill .coin-pill-unit, .daily-reward-pill .daily-label { display: none; }
 }
 @media (max-width: 380px) {
   .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

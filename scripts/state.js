@@ -18,6 +18,15 @@ const state = {
   hidden: { firstPlace:false, tripleClear:false, quadClear:false, speedrun:false, pacifist:false, survivor:false, cleaner:false },
   dailyTasks: { date:"", tasks:[] },
   leaderboards: [], // simulated global pool
+  /* HEX coin wallet. `coins` is the spendable balance; `lastDailyClaim`
+     is the unix ms at which the daily reward was last claimed. The
+     reward is gated to "today after 11:00 local" and a single claim
+     per calendar day — see scripts/wallet.js. */
+  wallet: { coins: 0, lastDailyClaim: 0 },
+  /* Piece-skin inventory. `equipped` is the active palette id; the
+     definitions live in scripts/skins.js. Every player starts with
+     the default skin already unlocked. */
+  skins:  { equipped: "default", unlocked: ["default"] },
   // live, not persisted
   run: null,
 };

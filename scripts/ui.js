@@ -69,10 +69,22 @@ function init() {
     state.dailyTasks = persisted.dailyTasks || state.dailyTasks;
     state.achievements = new Set(persisted.achievements || []);
     state.leaderboards = persisted.leaderboards || [];
+    if (persisted.wallet) state.wallet = Object.assign(state.wallet || { coins:0, lastDailyClaim:0 }, persisted.wallet);
+    if (persisted.skins)  state.skins  = Object.assign(state.skins  || { equipped:"default", unlocked:["default"] }, persisted.skins);
   }
+
+  /* Resurrect a permanent player ID from a dedicated key. This survives
+     "Reset all" (which clears the main state) so the ID truly never
+     changes for the lifetime of the install. */
+  const perma = (typeof loadPermanentPlayerId === "function") ? loadPermanentPlayerId() : "";
+  if (perma && !state.profile.id) state.profile.id = perma;
+  if (!state.profile.id) state.profile.id = genId();
+  if (typeof savePermanentPlayerId === "function") savePermanentPlayerId(state.profile.id);
+
   // theme & lang
   document.documentElement.setAttribute("data-theme", state.settings.theme || "dark");
   applyDeviceProfile(state.settings.device || "auto");
+  if (typeof applySkinAccent === "function") applySkinAccent();
   window.addEventListener("resize", onResizeMaybeApplyDevice, { passive: true });
 
   // Build login lang dropdown
@@ -106,7 +118,10 @@ function init() {
   $("#login-confirm").addEventListener("click", () => {
     const name = (nickInput.value || "").trim() || "Player";
     state.profile.nickname = name.slice(0, 20);
+    /* IDs are issued exactly once per install — see init() for the
+       permanent-key mirror that also survives reset. */
     if (!state.profile.id) state.profile.id = genId();
+    if (typeof savePermanentPlayerId === "function") savePermanentPlayerId(state.profile.id);
     if (!state.profile.registeredAt) state.profile.registeredAt = Date.now();
     registerLoginDay();
     saveState();
@@ -178,6 +193,8 @@ function enterApp() {
   buildBoardDom();
   startGame();
   bindAppEvents();
+  if (typeof initShopWiring === "function") initShopWiring();
+  if (typeof renderWallet === "function") renderWallet();
   refreshAllUI();
   // Stats avg uses totalScoreFromGames — backfill if missing
   if (typeof state.stats.totalScoreFromGames !== "number") {
@@ -203,6 +220,8 @@ function go(screen) {
   if (screen === "tasks") renderTasks();
   if (screen === "leaderboards") renderLeaderboards();
   if (screen === "achievements") renderAchievements();
+  if (screen === "shop" && typeof renderShop === "function") renderShop();
+  if (typeof renderWallet === "function") renderWallet();
   if (screen === "game") updateHUD();
 }
 
@@ -219,6 +238,12 @@ function renderMenu() {
   $("#menu-best").textContent = (state.stats.best || 0).toLocaleString();
   $("#menu-card-best").textContent = (state.stats.best || 0).toLocaleString();
   $("#menu-card-level").textContent = lvl;
+  /* Permanent player ID printed under the user pill (e.g. "ID HX-AB3C4-DE5F6"). */
+  const idEl = $("#menu-player-id");
+  if (idEl) idEl.textContent = "ID " + (state.profile.id || "—");
+  /* Shop header coin amount mirrors the HUD pill. */
+  const head = document.getElementById("shop-head-amount");
+  if (head && typeof getCoins === "function") head.textContent = (typeof formatCoins === "function") ? formatCoins(getCoins()) : String(getCoins());
 }
 
 /* ---------- App events ---------- */
@@ -275,7 +300,12 @@ function bindAppEvents() {
     const btn = $("#btn-reset-all");
     if (btn.dataset.armed === "1") {
       btn.dataset.armed = "0";
+      /* Reset everything EXCEPT the permanent player ID, which lives
+         under its own key. The user explicitly asked that the ID never
+         change after being issued. */
+      const keptId = (typeof loadPermanentPlayerId === "function") ? loadPermanentPlayerId() : (state.profile && state.profile.id);
       localStorage.removeItem(STORE_KEY);
+      if (keptId && typeof savePermanentPlayerId === "function") savePermanentPlayerId(keptId);
       location.reload();
       return;
     }
@@ -313,8 +343,12 @@ function bindAppEvents() {
   $("#exit-stay").addEventListener("click", () => { closeModal("#modal-exit"); });
   $("#exit-pause").addEventListener("click", () => { closeModal("#modal-exit"); go("menu"); });
   $("#exit-signout").addEventListener("click", () => {
+    /* "Sign out" clears the nickname so the login screen shows again,
+       but the permanent HEXON ID is preserved (mirror key) so the
+       player keeps their identity. */
     state.profile.nickname = "";
     saveState();
+    if (typeof savePermanentPlayerId === "function" && state.profile.id) savePermanentPlayerId(state.profile.id);
     location.reload();
   });
   $("#exit-quit").addEventListener("click", () => {

@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="styles/menu.css">
 <link rel="stylesheet" href="styles/components.css">
 <link rel="stylesheet" href="styles/game.css">
+<link rel="stylesheet" href="styles/shop.css">
 <link rel="stylesheet" href="styles/effects.css">
 </head>
 <body>
@@ -64,6 +65,17 @@
     <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M7 6a8 8 0 1 0 10 0"/></symbol>
     <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6z"/><path d="M19 3v3M21 4.5h-3M5 17v3M6.5 18.5h-3"/></symbol>
     <symbol id="i-confetti" viewBox="0 0 24 24"><path d="M4 20l5-14"/><path d="M4 20l14-5"/><path d="M11 6l3 3"/><path d="M9 12l3 3"/><path d="M7 17l3-1"/><path d="M14 6l2 2"/><path d="M18 10l2 0"/><path d="M20 14l2 2"/></symbol>
+    <!-- Shop & wallet icons (hand-drawn). -->
+    <symbol id="i-shop" viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5"/><path d="M3 9v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9"/><path d="M9 14h6"/><path d="M3 9h18"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 1.5-2 1.8-3 3v1"/><circle cx="12" cy="16.5" r="0.9" fill="currentColor"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="12" rx="1.5"/><path d="M3 13h18"/><path d="M12 9v12"/><path d="M8 9c-2 0-3-3-1-4s4 4 4 4"/><path d="M16 9c2 0 3-3 1-4s-4 4-4 4"/></symbol>
+    <symbol id="i-tg" viewBox="0 0 24 24"><path d="M3 11l17-7-3 16-5-3-3 4-1-5z"/><path d="M9 16l5-5"/></symbol>
+    <symbol id="i-skin" viewBox="0 0 24 24"><path d="M4 7l4-4h8l4 4-3 3v9H7v-9z"/><path d="M9 10v9"/><path d="M15 10v9"/></symbol>
+    <!-- Gradient used by inline HEX coin SVGs in shop cards. -->
+    <linearGradient id="coin-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffdf80"/>
+      <stop offset="1" stop-color="#ffb454"/>
+    </linearGradient>
   </defs>
 </svg>
 <!-- Decorative illustration sprite (hand-drawn vector art, no emoji). -->
@@ -195,11 +207,32 @@
             <div class="t2" data-i18n="brand.tag">premium puzzle</div>
           </div>
         </div>
+        <div class="menu-pills">
+          <!-- HEX coin wallet — clickable shortcut to the shop. -->
+          <button type="button" class="hex-coin-pill glass" id="hex-coin-pill" aria-label="HEX wallet">
+            <svg class="coin-pill-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" fill="url(#coin-grad)" stroke="rgba(255,180,84,.7)" stroke-width="1.2"/>
+              <text x="12" y="16" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="800" fill="#0b0f1a">H</text>
+            </svg>
+            <span class="coin-pill-amount mono" id="hex-coin-amount">0</span>
+            <span class="coin-pill-unit">HEX</span>
+          </button>
+          <!-- Daily reward (10-5000 HEX, once/day, available after 11:00). -->
+          <button type="button" class="daily-reward-pill glass daily-locked" id="daily-reward-pill" aria-label="Daily HEX reward">
+            <svg class="ic-svg sm" aria-hidden="true"><use href="#i-gift"/></svg>
+            <span class="daily-label" data-i18n="daily.title">Daily</span>
+            <span class="daily-cta mono">—</span>
+          </button>
+        </div>
         <div class="user-pill glass" id="menu-user-pill">
           <div class="avatar sm" id="menu-avatar">P</div>
           <div class="info">
             <div class="nm" id="menu-name">Player</div>
-            <div class="meta mono"><span data-i18n="hud.lvl">Lvl</span> <b id="menu-level">1</b> · <span data-i18n="profile.best">High score</span>: <b id="menu-best">0</b></div>
+            <div class="meta mono">
+              <span data-i18n="hud.lvl">Lvl</span> <b id="menu-level">1</b>
+              · <span data-i18n="profile.best">High score</span>: <b id="menu-best">0</b>
+              <br/><span class="menu-id mono" id="menu-player-id" title="HEXON ID">ID —</span>
+            </div>
           </div>
         </div>
       </header>
@@ -243,6 +276,10 @@
           <button class="menu-tile glass" data-go="settings">
             <svg class="ic-svg lg"><use href="#i-settings"/></svg>
             <span data-i18n="tab.settings">Settings</span>
+          </button>
+          <button class="menu-tile glass menu-tile-shop" id="menu-shop">
+            <svg class="ic-svg lg"><use href="#i-shop"/></svg>
+            <span data-i18n="tab.shop">Shop</span>
           </button>
           <button class="menu-tile glass menu-tile-exit" id="menu-exit">
             <svg class="ic-svg lg"><use href="#i-door"/></svg>
@@ -498,6 +535,50 @@
       </div>
     </section>
 
+    <!-- ============ SHOP SCREEN ============ -->
+    <section class="screen shop-screen" data-screen="shop">
+      <header class="screen-head shop-head">
+        <button class="btn-back" data-go="menu">
+          <svg class="ic-svg lg"><use href="#i-arrow-left"/></svg>
+          <span data-i18n="nav.menu">Menu</span>
+        </button>
+        <h2 class="screen-title">
+          <svg class="ic-svg lg"><use href="#i-shop"/></svg>
+          <span data-i18n="tab.shop">Shop</span>
+        </h2>
+        <div class="shop-head-coin">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" fill="url(#coin-grad)" stroke="rgba(255,180,84,.7)" stroke-width="1.2"/>
+            <text x="12" y="16" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="800" fill="#0b0f1a">H</text>
+          </svg>
+          <span class="mono" id="shop-head-amount">0</span>
+          <span class="coin-pill-unit">HEX</span>
+        </div>
+      </header>
+
+      <div class="shop-tabs" role="tablist">
+        <button class="shop-tab on" data-tab="skins" role="tab">
+          <svg class="ic-svg"><use href="#i-skin"/></svg>
+          <span data-i18n="shop.tab.skins">Skins</span>
+        </button>
+        <button class="shop-tab" data-tab="coins" role="tab">
+          <svg class="ic-svg"><use href="#i-coin"/></svg>
+          <span data-i18n="shop.tab.coins">HEX coins</span>
+        </button>
+      </div>
+
+      <div class="scroll-body shop-body">
+        <div class="shop-pane" id="shop-pane-skins">
+          <div class="shop-pane-hint" data-i18n="shop.skins.hint">Pick a palette for every piece you'll drop.</div>
+          <div class="shop-grid" id="shop-skin-grid"></div>
+        </div>
+        <div class="shop-pane hidden" id="shop-pane-coins">
+          <div class="shop-pane-hint" data-i18n="shop.coins.hint">HEX coins unlock skins. Pay via Telegram, the admin will top you up.</div>
+          <div class="shop-grid coin-grid" id="shop-coin-grid"></div>
+        </div>
+      </div>
+    </section>
+
   </div>
 
   <!-- Drag layer -->
@@ -550,6 +631,39 @@
     </div>
   </div>
 
+  <!-- Modal: Shop purchase confirmation (HEX coin bundle -> Telegram) -->
+  <div class="modal-back" id="modal-shop-confirm">
+    <div class="modal glass shop-confirm" role="dialog" aria-modal="true" aria-labelledby="shop-confirm-title">
+      <div style="display:grid;place-items:center;margin-bottom:6px">
+        <svg class="ic-svg xl" style="color:var(--accent)"><use href="#i-tg"/></svg>
+      </div>
+      <h2 id="shop-confirm-title" data-i18n="shop.confirm.title">Confirm purchase</h2>
+      <p class="shop-confirm-line">
+        <span data-i18n="shop.confirm.amount">You're buying</span>
+        <b id="shop-confirm-amount">— HEX</b>
+      </p>
+      <p class="shop-confirm-line">
+        <span data-i18n="shop.confirm.id">Your HEXON ID</span>
+        <b class="mono" id="shop-confirm-id">—</b>
+      </p>
+      <p class="shop-confirm-foot" data-i18n="shop.confirm.foot">
+        After confirmation you'll be redirected to the admin in Telegram.
+        Coins are credited manually after payment.
+      </p>
+      <p class="shop-confirm-handle">
+        <svg class="ic-svg"><use href="#i-tg"/></svg>
+        <b class="mono" id="shop-confirm-handle">@PloxoyHard</b>
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="shop-confirm-yes">
+          <svg class="ic-svg"><use href="#i-tg"/></svg>
+          <span data-i18n="shop.confirm.yes">Open Telegram</span>
+        </button>
+        <button class="btn" id="shop-confirm-no" data-i18n="shop.confirm.no">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: How to play -->
   <div class="modal-back" id="modal-howto">
     <div class="modal glass" style="text-align:left">
@@ -579,6 +693,9 @@
 <script src="scripts/state.js"></script>
 <script src="scripts/util.js"></script>
 <script src="scripts/effects.js"></script>
+<script src="scripts/skins.js"></script>
+<script src="scripts/wallet.js"></script>
+<script src="scripts/shop.js"></script>
 <script src="scripts/game.js"></script>
 <script src="scripts/hud.js"></script>
 <script src="scripts/tasks.js"></script>

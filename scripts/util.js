@@ -49,7 +49,9 @@ function ensureAudio(){
   try{
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     masterGain = audioCtx.createGain();
-    masterGain.gain.value = 0.85;
+    /* Lowered from 0.85 -> 0.55 so every sfx feels softer at the same
+       relative oscillator gains. Players can still mute via settings. */
+    masterGain.gain.value = 0.55;
     masterGain.connect(audioCtx.destination);
   }catch{}
 }
@@ -99,41 +101,62 @@ function tone(opts){
 function beep(freq, dur, type){
   tone({ freq, dur, type: type || "sine", gain: 0.06 });
 }
-/* Curated effect presets (frequencies in Hz, dur in ms). */
+/* Curated effect presets (frequencies in Hz, dur in ms). Tuned to be
+   soft & pleasant — sines + triangles, low gains, short releases. */
 const sfx = {
-  click()   { tone({ freq: 720, dur: 50,  type: "triangle", gain: 0.05 }); },
-  hover()   { tone({ freq: 920, dur: 30,  type: "sine",     gain: 0.025 }); },
+  click()   { tone({ freq: 660, dur: 45,  type: "sine",     gain: 0.04, release: 0.06 }); },
+  hover()   { tone({ freq: 880, dur: 28,  type: "sine",     gain: 0.018, release: 0.05 }); },
   place()   {
-    tone({ freq: 520, dur: 60, type: "triangle", gain: 0.06 });
-    tone({ freq: 780, dur: 60, type: "sine",     gain: 0.04, detune: 4 });
+    tone({ freq: 480, dur: 55, type: "sine",     gain: 0.045, release: 0.09 });
+    tone({ freq: 720, dur: 55, type: "triangle", gain: 0.025, detune: 4, release: 0.09 });
   },
   invalid() {
-    tone({ freq: 260, dur: 90, type: "square", gain: 0.05, slide: [260, 180] });
+    tone({ freq: 220, dur: 100, type: "triangle", gain: 0.035, slide: [220, 160] });
   },
   clear()   {
-    tone({ freq: 660, dur: 110, type: "sine",     gain: 0.07 });
-    tone({ freq: 990, dur: 140, type: "triangle", gain: 0.05, detune: 6 });
+    tone({ freq: 620, dur: 110, type: "sine",     gain: 0.055 });
+    tone({ freq: 930, dur: 140, type: "triangle", gain: 0.035, detune: 5 });
   },
   combo(n)  {
-    const base = 520 + Math.min(8, n) * 60;
-    tone({ freq: base,           dur: 90,  type: "triangle", gain: 0.07 });
-    tone({ freq: base * 1.25,    dur: 110, type: "sine",     gain: 0.05 });
-    tone({ freq: base * 1.5,     dur: 130, type: "sine",     gain: 0.04 });
+    const base = 500 + Math.min(8, n) * 50;
+    tone({ freq: base,        dur: 80,  type: "sine",     gain: 0.05 });
+    tone({ freq: base * 1.25, dur: 110, type: "sine",     gain: 0.035 });
+    tone({ freq: base * 1.5,  dur: 130, type: "triangle", gain: 0.025 });
   },
   lvlup()   {
-    // Major triad arpeggio sweeping upward.
+    // Major triad arpeggio sweeping upward (softer triangles).
     [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
-      setTimeout(()=> tone({ freq: f, dur: 160, type: "triangle", gain: 0.07 }), i * 70);
+      setTimeout(()=> tone({ freq: f, dur: 150, type: "triangle", gain: 0.05, release: 0.12 }), i * 70);
     });
   },
   gameover(){
     [440, 392, 349.23, 293.66].forEach((f, i) => {
-      setTimeout(()=> tone({ freq: f, dur: 220, type: "triangle", gain: 0.06 }), i * 110);
+      setTimeout(()=> tone({ freq: f, dur: 200, type: "sine", gain: 0.045 }), i * 100);
     });
   },
-  toast()   { tone({ freq: 880, dur: 50, type: "sine", gain: 0.04 }); },
-  modalOpen()   { tone({ freq: 480, dur: 80, type: "sine", gain: 0.04, slide: [380, 540] }); },
-  modalClose()  { tone({ freq: 380, dur: 70, type: "sine", gain: 0.035, slide: [540, 380] }); },
+  toast()       { tone({ freq: 820, dur: 45, type: "sine", gain: 0.03 }); },
+  modalOpen()   { tone({ freq: 480, dur: 75, type: "sine", gain: 0.032, slide: [380, 540] }); },
+  modalClose()  { tone({ freq: 380, dur: 65, type: "sine", gain: 0.028, slide: [540, 380] }); },
+  /* Wallet & shop sounds — chime-style, deliberately gentle. */
+  coinUp()    {
+    tone({ freq: 880, dur: 70, type: "sine",     gain: 0.045 });
+    setTimeout(()=> tone({ freq: 1318, dur: 90, type: "sine", gain: 0.03 }), 45);
+  },
+  coinSpend() {
+    tone({ freq: 660, dur: 60, type: "sine",     gain: 0.035 });
+    setTimeout(()=> tone({ freq: 520, dur: 80, type: "sine", gain: 0.025 }), 40);
+  },
+  coinJackpot(){
+    // Daily-reward fanfare: ascending pentatonic over ~600ms.
+    [523, 659, 784, 988, 1175].forEach((f, i) => {
+      setTimeout(()=> tone({ freq: f, dur: 130, type: "triangle", gain: 0.04 }), i * 90);
+    });
+  },
+  shopOpen()  { tone({ freq: 540, dur: 85, type: "sine", gain: 0.035, slide: [380, 620] }); },
+  shopEquip() {
+    tone({ freq: 740, dur: 90, type: "sine", gain: 0.04 });
+    setTimeout(()=> tone({ freq: 988, dur: 110, type: "triangle", gain: 0.03 }), 60);
+  },
 };
 function vibrate(p){ if(state.settings.vibration && navigator.vibrate) navigator.vibrate(p); }
 

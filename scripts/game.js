@@ -143,12 +143,15 @@ function rotateShape(shape){
   return out;
 }
 
-/* generate a tray of 3 pieces */
+/* generate a tray of 3 pieces. The colour palette comes from the
+   currently equipped skin (skins.js), falling back to the default
+   PALETTE so the game still runs if skins.js failed to load. */
 function genPieces(){
+  const palette = (typeof currentPalette === "function") ? currentPalette() : PALETTE;
   const pieces = [];
   for(let i=0;i<3;i++){
     const shape = SHAPES[Math.floor(Math.random()*SHAPES.length)];
-    const color = PALETTE[Math.floor(Math.random()*PALETTE.length)];
+    const color = palette[Math.floor(Math.random()*palette.length)];
     pieces.push({ shape, color, id: "p"+Date.now()+"_"+i+"_"+Math.random().toString(36).slice(2,6), used:false });
   }
   return pieces;

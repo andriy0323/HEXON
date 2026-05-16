@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.webkit.ConsoleMessage;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -45,11 +46,35 @@ public class MainActivity extends Activity {
 
         webView = findViewById(R.id.webview);
         configureWebView();
+        // Expose AndroidHexon.exit() to JS so the in-game "Quit" button
+        // can really close the app.
+        webView.addJavascriptInterface(new HexonJsBridge(), "AndroidHexon");
 
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
         } else {
             webView.loadUrl(START_URL);
+        }
+    }
+
+    /**
+     * Tiny bridge object that the web layer can call to actually
+     * close the activity. We post the finish onto the WebView's
+     * looper because JS-thread callbacks aren't allowed to touch
+     * the activity directly.
+     */
+    private class HexonJsBridge {
+        @JavascriptInterface
+        public void exit() {
+            runOnUiThread(new Runnable() {
+                @Override public void run() {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        finishAndRemoveTask();
+                    } else {
+                        finish();
+                    }
+                }
+            });
         }
     }
 
